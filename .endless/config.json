@@ -1,0 +1,11 @@
+{
+  "name": "go-diffutils",
+  "label": "",
+  "description": "",
+  "language": "go",
+  "status": "active",
+  "dependencies": [],
+  "documents": {
+    "rules": []
+  }
+}
