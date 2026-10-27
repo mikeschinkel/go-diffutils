@@ -88,3 +88,8 @@ statement = "Does not change any exported identifier in root, dmp or sgdiff"
 id = "P17"
 kind = "exclusion"
 statement = "Does not finish the paused rebase in the main checkout; Mike does that before spawning"
+
+[[item]]
+id = "P18"
+kind = "deliverable"
+statement = "doc.go's package comment names go-difflib's license as BSD 3-Clause, not MIT"
