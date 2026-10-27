@@ -103,3 +103,8 @@ statement = "difflib.go passes golangci-lint: WriteUnifiedDiff and WriteContextD
 id = "P20"
 kind = "deliverable"
 statement = "difflib.go's header says Mike modified the absorbed code and summarises how"
+
+[[item]]
+id = "P21"
+kind = "deliverable"
+statement = "A .gitignore ignores go.work, go.work.sum and Endless's worktree files"
