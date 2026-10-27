@@ -93,3 +93,8 @@ statement = "Does not finish the paused rebase in the main checkout; Mike does t
 id = "P18"
 kind = "deliverable"
 statement = "doc.go's package comment names go-difflib's license as BSD 3-Clause, not MIT"
+
+[[item]]
+id = "P19"
+kind = "deliverable"
+statement = "difflib.go passes golangci-lint: WriteUnifiedDiff and WriteContextDiff return their final flush error, with tests proving it, and staticcheck's quick-fixes applied"
