@@ -1,0 +1,439 @@
+{
+  "results": {
+    "tool": {
+      "name": "endless"
+    },
+    "summary": {
+      "tests": 84,
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0,
+      "pending": 0,
+      "other": 0,
+      "start": 0,
+      "stop": 0
+    },
+    "tests": [
+      {
+        "name": ".: go vet and go test -race pass with GOWORK=off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp: go vet and go test -race pass with GOWORK=off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff: go vet and go test -race pass with GOWORK=off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE opens with the MIT license",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE keeps Mike's copyright",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE names go-difflib's license as BSD 3-Clause",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE no longer says BSD 2-Clause",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE keeps Mezard's copyright line",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE has the source-retention condition",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE has the binary-reproduction condition",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE has the non-endorsement condition",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "LICENSE has the BSD disclaimer",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "difflib.go's header names BSD 3-Clause",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "difflib.go's header no longer says MIT",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "difflib.go's header keeps Mezard's copyright",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "difflib.go's header points to LICENSE",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "difflib.go's header says the code was modified",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "doc.go names go-difflib's license as BSD 3-Clause",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "doc.go no longer says MIT",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README installs dmp",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README installs sgdiff",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README installs root",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README has a Local Development section",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README tells you to run just work",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README explains GOWORK=off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README has a License section",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "README credits go-difflib",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp/go.mod has no replace directive",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp requires root v0.0.0-20261027080818-3113139ed180, a commit on main",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp/go.sum records root v0.0.0-20261027080818-3113139ed180",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff/go.mod has no replace directive",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff requires root v0.0.0-20261027080818-3113139ed180, a commit on main",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff/go.sum records root v0.0.0-20261027080818-3113139ed180",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": ".: go mod tidy -diff reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp: go mod tidy -diff reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff: go mod tidy -diff reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": ".: golangci-lint reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp: golangci-lint reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff: golangci-lint reports nothing",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "WriteUnifiedDiff returns its flush error",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "WriteContextDiff returns its flush error",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers help",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers work",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers ensure-valid",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers test",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers lint",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers fmt",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers vet",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers tidy",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers build",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers clean",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "just offers ci",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "the justfile does not list its modules",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "go.work uses every directory holding a go.mod",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "git ignores go.work",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "git ignores go.work.sum",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "git ignores .endless/worktrees/x",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "git ignores .endless/worktree.json",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "test.yml sets GOWORK off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "test.yml tests root",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "test.yml tests dmp",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "test.yml tests sgdiff",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "test.yml checks every go.mod is tidy",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "module is a choice input",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "module is a choice of root, dmp, sgdiff",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "root tags vX.Y.Z",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "a nested module tags \u003cdir\u003e/vX.Y.Z",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "root's declared path is go-diffutils",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml checks the declared module path",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml refuses a replace directive",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml refuses an existing tag",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml tests with GOWORK off",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml runs the module's tests",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "a nested module's previous tag has its prefix",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "root's previous tag is unprefixed",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "nested notes list only commits touching its directory",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "root notes omit dmp, sgdiff and .endless",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "release.yml names no go-dt module",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": ".endless/tasks/_harness.sh is committed",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": ".endless/tasks/_guard.sh is committed",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "no doterr.go differs from main",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": ".: exported funcs and types are unchanged",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "dmp: exported funcs and types are unchanged",
+        "status": "passed",
+        "duration": 0
+      },
+      {
+        "name": "sgdiff: exported funcs and types are unchanged",
+        "status": "passed",
+        "duration": 0
+      }
+    ]
+  }
+}
