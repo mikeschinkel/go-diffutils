@@ -1,0 +1,11 @@
+Precondition (done by Mike in the main checkout before spawning, not by this task): the paused `git pull --rebase` is finished with LICENSE resolved to the local version, and main is pushed, so main contains GitHub's initial commit, the two Endless commits and the module code. A worktree made before that would start from a main without GitHub's commit.
+
+Model: go-dt (E-2431). Publishable modules (root, dmp, sgdiff) carry no replace and require published versions; local development uses an uncommitted go.work written by `just work`; CI runs with GOWORK=off; the Release workflow takes a module choice and makes `vX.Y.Z` for root and `<dir>/vX.Y.Z` for dmp and sgdiff. Copy go-dt's justfile, test.yml and release.yml and adapt them: the nested list is dmp and sgdiff; there are no `<dir>/test` modules (tests live in each module); root's release notes exclude dmp, sgdiff and .endless.
+
+Licensing: the package stays MIT. LICENSE holds Mike's MIT text, then a section stating that difflib.go is derived from github.com/pmezard/go-difflib, with Patrick Mezard's copyright line and the full BSD 3-Clause text (three conditions and the disclaimer), copied from go-difflib's own LICENSE. The header comment of difflib.go names BSD 3-Clause (it wrongly says MIT), keeps the copyright line, and points to LICENSE. The README gets a License section crediting go-difflib.
+
+dmp and sgdiff drop `replace => ../` and require root at the pseudo-version of root's current commit on main (`go get github.com/mikeschinkel/go-diffutils@main` with GOWORK=off), then `go mod tidy`. Root's Go code is unchanged by this task apart from the difflib.go header comment, so the pseudo-version and root v0.1.0 carry the same code. A later dmp or sgdiff release can move the require to a tag.
+
+Both doterr.go copies stay: root's is package diffutils, sgdiff's is package sgdiff and is used by sgdiff/parse.go.
+
+After landing, Mike runs the Release workflow for root, dmp and sgdiff at v0.1.0, and the session checks the proxy resolves each tag and pkg.go.dev recognises root's license. If pkg.go.dev does not recognise it, Mezard's notice moves to its own file under a name pkg.go.dev accepts, and LICENSE becomes plain MIT (a follow-up, since it is code after the land).
