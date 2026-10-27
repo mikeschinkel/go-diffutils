@@ -68,6 +68,7 @@ statement = ".endless/tasks holds Endless's _harness.sh and _guard.sh unchanged"
 id = "P13"
 kind = "deliverable"
 statement = "After the land, root, dmp and sgdiff each have a v0.1.0 tag made by the Release workflow, and the Go proxy resolves each"
+post_land = true
 
 [[item]]
 id = "P14"
