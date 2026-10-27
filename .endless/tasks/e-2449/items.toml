@@ -74,6 +74,7 @@ post_land = true
 id = "P14"
 kind = "deliverable"
 statement = "After the root tag, pkg.go.dev shows root's documentation with its license recognised, or a follow-up task is filed to split Mezard's notice into its own file"
+post_land = true
 
 [[item]]
 id = "P15"
