@@ -98,3 +98,8 @@ statement = "doc.go's package comment names go-difflib's license as BSD 3-Clause
 id = "P19"
 kind = "deliverable"
 statement = "difflib.go passes golangci-lint: WriteUnifiedDiff and WriteContextDiff return their final flush error, with tests proving it, and staticcheck's quick-fixes applied"
+
+[[item]]
+id = "P20"
+kind = "deliverable"
+statement = "difflib.go's header says Mike modified the absorbed code and summarises how"
