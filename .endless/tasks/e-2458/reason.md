@@ -1,0 +1,1 @@
+Filed in the wrong project: release-workflow work for go-pkgs repos belongs to gomion. Folded into gomion's E-2454, widened to cover it; no command exists yet to move a task between projects (E-2459).
