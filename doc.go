@@ -1,8 +1,8 @@
 // Package diffutils provides canonical types and algorithms for computing
 // and representing text diffs in Go.
 //
-// The core diff engine is based on pmezard/go-difflib (MIT licensed),
-// which implements a port of Python's difflib SequenceMatcher. This
+// The core diff engine is based on pmezard/go-difflib (BSD 3-Clause
+// licensed; see LICENSE), which implements a port of Python's difflib SequenceMatcher. This
 // package absorbs that code and adds:
 //
 //   - Canonical interchange types ([DiffContent], [DiffChange], [LineRange])

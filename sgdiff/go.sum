@@ -1,5 +1,7 @@
 github.com/google/go-cmp v0.5.2 h1:X2ev0eStA3AbceY54o37/0PQ/UWqKEiiO2dKL5OPaFM=
 github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
+github.com/mikeschinkel/go-diffutils v0.0.0-20261027080818-3113139ed180 h1:4ZVhNd2gZoGlmnUJRButGqS3JSGAHP2eRbmNjaOtiQw=
+github.com/mikeschinkel/go-diffutils v0.0.0-20261027080818-3113139ed180/go.mod h1:oPuj2k5oC4GAm60dSGnKDorv9nb1MVK6eDJ0iqnbPgM=
 github.com/shurcooL/go v0.0.0-20180423040247-9e1955d9fb6e/go.mod h1:TDJrrUr11Vxrven61rcy3hJMUqaf/CLWYhHNPmT14Lk=
 github.com/shurcooL/go-goon v0.0.0-20170922171312-37c2f522c041/go.mod h1:N5mDOmsrJOB+vfqUK+7DmDyjhSLIIBnXo9lvZJj3MWQ=
 github.com/sourcegraph/go-diff v0.7.0 h1:9uLlrd5T46OXs5qpp8L/MTltk0zikUGi0sNNyCpA8G0=

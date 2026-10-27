@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+#
+# Shared harness for per-task verification suites. Source it, don't run it:
+#
+#     source "$(dirname "${BASH_SOURCE[0]}")/../_harness.sh"
+#
+# It provides the section / report_pass / report_fail / setup_error / summary
+# vocabulary these suites have always shared, and adds two things a copied
+# block could not:
+#
+#   1. It sources _guard.sh, which REFUSES a suite run from another task's
+#      worktree or outside the runner's isolation. Sourcing it here rather
+#      than repeating the check is what lets a suite carry one line and get
+#      both; see _guard.sh for why neither refusal trusts an environment
+#      variable.
+#
+#   2. It emits TAP alongside the human-readable output, so the runner
+#      normalizes each assertion into the same CTRF report a manifest suite
+#      produces. TAP goes to the file named by $ENDLESS_VERIFY_TAP; the
+#      pass/fail lines you are reading go to the terminal, live and in colour.
+#      Neither channel costs the other anything.
+#
+# See .endless/tasks/CLAUDE.md for the rules these suites live under.
+
+# The guard, FIRST, before this file defines anything. A suite reaches the
+# harness on its first executable line, so sourcing the guard here means the
+# refusal has had its say before a single assertion, fixture or `cd` exists.
+#
+# A MISSING guard is fatal, not a warning. `source` on an absent file prints an
+# error and carries on, which would run the suite with no ownership and no
+# isolation check at all — the exact failure the guard exists to prevent, and
+# silent in the only way that matters, because the suite still passes. The two
+# files ship together; one without the other is a broken tree, not a
+# configuration.
+_endless_guard="$(dirname "${BASH_SOURCE[0]}")/_guard.sh"
+if [[ ! -f "${_endless_guard}" ]]; then
+    printf '%s\n' \
+        "This verification suite cannot run: its guard is missing." \
+        "" \
+        "    expected: ${_endless_guard}" \
+        "" \
+        "Refusing rather than continuing. Without _guard.sh nothing checks that" \
+        "this is your task's suite, or that you are isolated from your real" \
+        "config and the main database — so a suite that ran anyway would look" \
+        "like it passed while proving nothing. _guard.sh ships beside" \
+        "_harness.sh; restore it and re-run." >&2
+    exit 2
+fi
+source "${_endless_guard}"
+
+PASS_COUNT=0
+FAIL_COUNT=0
+TAP_COUNT=0
+FAILED_TESTS=()
+
+if [[ -t 1 ]]; then
+    GREEN=$'\033[32m'; RED=$'\033[31m'; DIM=$'\033[2m'; BOLD=$'\033[1m'; RESET=$'\033[0m'
+else
+    GREEN=""; RED=""; DIM=""; BOLD=""; RESET=""
+fi
+UNDERLINE="──────────────────────────────────────────────────────────────"
+
+# tap writes one line to the runner's TAP stream. The destination is unset when
+# the harness is sourced by a script the runner invoked as a manifest [[check]]
+# rather than as the task's own suite — that check declares and emits its own
+# result stream, so there is nothing here to collect and the assertions still
+# print. Discarding is right; dying under `set -u` would not be.
+ENDLESS_VERIFY_TAP="${ENDLESS_VERIFY_TAP:-/dev/null}"
+
+# tap writes ONE TAP record, however many lines its argument spans. A newline
+# inside a result or a diagnostic used to reach the stream raw, and an
+# unprefixed line mid-stream is not TAP: the runner's parser stopped counting
+# where it met one, then reported a truncated total — 1 failed/18 passed for a
+# real 1 failed/53 passed — while the on-screen summary below stayed correct.
+# It under-reported only on a FAILING run, because the multi-line values are
+# `actual`s, which is precisely when someone is reading the count.
+#
+# So every line after the first is emitted as a `# ` diagnostic, which TAP
+# attaches to the record it follows. Single-line calls are byte-identical to
+# what they were.
+tap() {
+    local first=1 line
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        if (( first )); then
+            printf '%s\n' "${line}"
+            first=0
+        else
+            printf '# %s\n' "${line}"
+        fi
+    done <<<"$1" >>"${ENDLESS_VERIFY_TAP}"
+}
+
+# section prints a heading on the terminal only. It emits no TAP: a TAP
+# diagnostic line attaches to the PRECEDING test, so a heading written there
+# would hang itself off whatever assertion happened to run last.
+section() {
+    printf '\n%s%s%s\n%s\n' "${BOLD}" "$1" "${RESET}" "${UNDERLINE}"
+}
+
+report_pass() {
+    PASS_COUNT=$((PASS_COUNT + 1))
+    TAP_COUNT=$((TAP_COUNT + 1))
+    printf '  %s✓%s %s\n' "${GREEN}" "${RESET}" "$1"
+    tap "ok ${TAP_COUNT} - $1"
+}
+
+report_fail() {
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    TAP_COUNT=$((TAP_COUNT + 1))
+    FAILED_TESTS+=("$1")
+    printf '  %s✗%s %s\n' "${RED}" "${RESET}" "$1"
+    [[ -n "${2:-}" ]] && printf '      %sexpected:%s %s\n' "${DIM}" "${RESET}" "$2"
+    [[ -n "${3:-}" ]] && printf '      %sactual:  %s %s\n' "${DIM}" "${RESET}" "$3"
+    tap "not ok ${TAP_COUNT} - $1"
+    [[ -n "${2:-}" ]] && tap "# expected: $2"
+    [[ -n "${3:-}" ]] && tap "# actual:   $3"
+    return 0
+}
+
+# report_skip records a check that could not run here (a missing optional tool,
+# a platform it does not apply to). A skip is neither a pass nor a failure and
+# must never be reported as one.
+report_skip() {
+    TAP_COUNT=$((TAP_COUNT + 1))
+    printf '  %s-%s %s %s(skipped: %s)%s\n' "${DIM}" "${RESET}" "$1" "${DIM}" "${2:-}" "${RESET}"
+    tap "ok ${TAP_COUNT} - $1 # SKIP ${2:-}"
+}
+
+# assert_eq / assert_contains are the two shapes almost every hand-written check
+# in these suites took. Having them here means a new suite states the property
+# and not the plumbing.
+assert_eq() {
+    local label="$1" expected="$2" actual="$3"
+    if [[ "${actual}" == "${expected}" ]]; then
+        report_pass "${label}"
+    else
+        report_fail "${label}" "${expected}" "${actual}"
+    fi
+}
+
+assert_contains() {
+    local label="$1" needle="$2" haystack="$3"
+    if [[ "${haystack}" == *"${needle}"* ]]; then
+        report_pass "${label}"
+    else
+        report_fail "${label}" "output containing: ${needle}" "${haystack}"
+    fi
+}
+
+assert_not_contains() {
+    local label="$1" needle="$2" haystack="$3"
+    if [[ "${haystack}" != *"${needle}"* ]]; then
+        report_pass "${label}"
+    else
+        report_fail "${label}" "output WITHOUT: ${needle}" "${haystack}"
+    fi
+}
+
+# ── Whose experience a check tests ─────────────────────────────────────────
+#
+# Every check runs as a PERSON, whoever started the run: the runner strips the
+# caller's identity (the agent harness's variables, ENDLESS_AUDIENCE,
+# ENDLESS_SESSION_ID, TMUX, TMUX_PANE) and points TMUX_TMPDIR at a private,
+# empty tmux server of the run's own. So a suite's verdict cannot depend on who
+# ran it. Test both sides where they differ, and never read identity from the
+# caller — wrap the check instead.
+
+# as_agent runs one command as the supported agent harness: the runner's
+# synthesized agent environment (a fixed fixture session id, the agent audience)
+# layered onto the person default. It runs in a subshell, so it wraps shell
+# functions too, and nothing leaks into the next check.
+#
+#     out="$(as_agent endless task show E-99999999 --db sandbox 2>&1)"
+as_agent() {
+    local file="${ENDLESS_VERIFY_AGENT_ENV:-}"
+    [[ -n "${file}" && -f "${file}" ]] \
+        || setup_error "as_agent: ENDLESS_VERIFY_AGENT_ENV is not set — run the suite through \`endless task verify\`"
+    (
+        local kv
+        while IFS= read -r kv || [[ -n "${kv}" ]]; do
+            [[ -n "${kv}" ]] && export "${kv?}"
+        done <"${file}"
+        "$@"
+    )
+}
+
+# with_tmux runs one command inside tmux: a fixture pane on the run's private
+# server, started on first use, with TMUX and TMUX_PANE naming it. The pane
+# runs `sh`, not your shell, so it is the same pane whoever runs the suite. It
+# combines with as_agent in either order (`with_tmux as_agent cmd …`).
+#
+# The runner kills the private server after the run, pass or fail.
+with_tmux() {
+    local session="endless-verify" info
+    [[ -n "${TMUX_TMPDIR:-}" ]] \
+        || setup_error "with_tmux: TMUX_TMPDIR is not set — run the suite through \`endless task verify\`"
+    if ! env -u TMUX -u TMUX_PANE tmux has-session -t "${session}" 2>/dev/null; then
+        env -u TMUX -u TMUX_PANE tmux new-session -d -s "${session}" -x 200 -y 50 sh \
+            || setup_error "with_tmux: could not start the fixture tmux session"
+    fi
+    info="$(env -u TMUX -u TMUX_PANE tmux display-message -p -t "${session}:" \
+        '#{socket_path},#{pid},#{session_id} #{pane_id}')" \
+        || setup_error "with_tmux: could not read the fixture pane"
+    (
+        export TMUX="${info%% *}" TMUX_PANE="${info##* }"
+        TMUX="${TMUX/,\$/,}"
+        "$@"
+    )
+}
+
+setup_error() {
+    printf '%sSETUP ERROR:%s %s\n' "${RED}${BOLD}" "${RESET}" "$1" >&2
+    tap "Bail out! $1"
+    exit 2
+}
+
+# summary prints the closing counts and exits: 0 when everything passed, 1 on
+# any failure. Call it as the last line of a suite.
+summary() {
+    section "Summary"
+    printf '  %s%d passed%s, %s%d failed%s\n' \
+        "${GREEN}" "${PASS_COUNT}" "${RESET}" \
+        "$([[ ${FAIL_COUNT} -gt 0 ]] && printf '%s' "${RED}")" "${FAIL_COUNT}" "${RESET}"
+
+    tap "1..${TAP_COUNT}"
+
+    if (( FAIL_COUNT > 0 )); then
+        printf '\n  Failed:\n'
+        for t in "${FAILED_TESTS[@]}"; do printf '    - %s\n' "${t}"; done
+        exit 1
+    fi
+    exit 0
+}

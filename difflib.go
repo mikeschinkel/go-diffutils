@@ -1,8 +1,16 @@
-// Absorbed from github.com/pmezard/go-difflib (MIT License).
+// Absorbed from github.com/pmezard/go-difflib (BSD 3-Clause License).
 //
 // Original copyright:
 //   Copyright (c) 2013, Patrick Mezard
 //   All rights reserved.
+//
+// Modified by Mike Schinkel: moved into package diffutils, helpers renamed
+// and comments condensed, and WriteUnifiedDiff and WriteContextDiff now
+// return the error from their final flush instead of discarding it. See
+// this repository's git history for the details.
+//
+// Redistributed under the terms of that license; its full text is in the
+// LICENSE file at the root of this module.
 //
 // This is a partial port of Python's difflib module providing:
 //   - SequenceMatcher for comparing []string slices
@@ -298,7 +306,7 @@ func (m *SequenceMatcher) GetGroupedOpCodes(n int) [][]OpCode {
 		}
 		group = append(group, OpCode{c.Tag, i1, i2, j1, j2})
 	}
-	if len(group) > 0 && !(len(group) == 1 && group[0].Tag == 'e') {
+	if len(group) > 0 && (len(group) != 1 || group[0].Tag != 'e') {
 		groups = append(groups, group)
 	}
 	return groups
@@ -377,11 +385,17 @@ type UnifiedDiff struct {
 }
 
 // WriteUnifiedDiff writes a unified diff to the given writer.
-func WriteUnifiedDiff(writer io.Writer, diff UnifiedDiff) error {
+func WriteUnifiedDiff(writer io.Writer, diff UnifiedDiff) (err error) {
 	buf := bufio.NewWriter(writer)
-	defer buf.Flush()
+	// Report a failed flush unless an earlier write already failed
+	defer func() {
+		flushErr := buf.Flush()
+		if err == nil {
+			err = flushErr
+		}
+	}()
 	wf := func(format string, args ...interface{}) error {
-		_, err := buf.WriteString(fmt.Sprintf(format, args...))
+		_, err := fmt.Fprintf(buf, format, args...)
 		return err
 	}
 	ws := func(s string) error {
@@ -477,10 +491,9 @@ type ContextDiff UnifiedDiff
 // WriteContextDiff writes a context diff to the given writer.
 func WriteContextDiff(writer io.Writer, diff ContextDiff) error {
 	buf := bufio.NewWriter(writer)
-	defer buf.Flush()
 	var diffErr error
 	wf := func(format string, args ...interface{}) {
-		_, err := buf.WriteString(fmt.Sprintf(format, args...))
+		_, err := fmt.Fprintf(buf, format, args...)
 		if diffErr == nil && err != nil {
 			diffErr = err
 		}
@@ -556,6 +569,11 @@ func WriteContextDiff(writer io.Writer, diff ContextDiff) error {
 				break
 			}
 		}
+	}
+	// Report a failed flush unless an earlier write already failed
+	flushErr := buf.Flush()
+	if diffErr == nil {
+		diffErr = flushErr
 	}
 	return diffErr
 }

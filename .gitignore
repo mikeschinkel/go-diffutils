@@ -1,0 +1,35 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+bin
+bin/**
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go workspace file, written by `just work`
+go.work
+go.work.sum
+
+# env file
+.env
+
+# Editor/IDE
+.DS_Store
+
+# endless (managed by `endless project init`)
+.endless/worktrees/
+.endless/tmp/
+.endless/logs/
+.endless/worktree.json
+.endless/worktree.lock

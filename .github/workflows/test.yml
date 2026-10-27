@@ -1,0 +1,98 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+env:
+  GO_VERSION: '1.25'
+  # Build against each go.mod's requires, never a local go.work (see README,
+  # Local Development), so an unpublished dependency fails here.
+  GOWORK: 'off'
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Test root
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Test dmp
+        run: (cd dmp && go test -v -race ./...)
+
+      - name: Test sgdiff
+        run: (cd sgdiff && go test -v -race ./...)
+
+  # Every go.mod must be tidy as committed; CI checks, it does not tidy for you
+  tidy:
+    name: go.mod Tidy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Check every module is tidy
+        run: |
+          status=0
+          for mod in $(find . -name go.mod -not -path './.endless/*' | sort); do
+            dir=$(dirname "$mod")
+            echo "Checking $dir..."
+            if ! (cd "$dir" && go mod tidy -diff); then
+              echo "::error file=$mod::$dir is not tidy; run 'just tidy'"
+              status=1
+            fi
+          done
+          exit $status
+
+  # Lint and static analysis, in every module
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        dir: [ '.', dmp, sgdiff ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          working-directory: ${{ matrix.dir }}
+          args: --timeout=5m

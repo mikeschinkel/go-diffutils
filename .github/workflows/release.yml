@@ -1,0 +1,261 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: 'Module to release (root tags vX.Y.Z; a nested module tags <dir>/vX.Y.Z)'
+        required: true
+        type: choice
+        options:
+          - root
+          - dmp
+          - sgdiff
+      version:
+        description: 'Version (e.g., v0.1.1), without the module prefix'
+        required: true
+        type: string
+      description:
+        description: 'Release description (optional - provide context about this release)'
+        required: false
+        type: string
+
+env:
+  GO_VERSION: '1.25'
+  # Build against each go.mod's requires, never a local go.work
+  GOWORK: 'off'
+  MODULE: ${{ inputs.module }}
+  VERSION: ${{ inputs.version }}
+
+jobs:
+  # Work out the tag and directory from the inputs, and refuse a module that
+  # is not fit to publish, before anything is tested or tagged
+  prepare:
+    name: Validate Release
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      dir: ${{ steps.tag.outputs.dir }}
+      title: ${{ steps.tag.outputs.title }}
+      prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Validate version format
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Error: Version must match format v0.0.0 or v0.0.0-suffix"
+            echo "Got: $VERSION"
+            exit 1
+          fi
+
+      - name: Build tag and directory
+        id: tag
+        run: |
+          if [ "$MODULE" = "root" ]; then
+            DIR="."
+            TAG="$VERSION"
+            MODPATH="github.com/mikeschinkel/go-diffutils"
+          else
+            DIR="$MODULE"
+            TAG="$MODULE/$VERSION"
+            MODPATH="github.com/mikeschinkel/go-diffutils/$MODULE"
+          fi
+          echo "dir=${DIR}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "modpath=${MODPATH}" >> $GITHUB_OUTPUT
+          echo "title=${MODPATH#github.com/mikeschinkel/} ${VERSION}" >> $GITHUB_OUTPUT
+          echo "Releasing ${MODPATH} as tag ${TAG}"
+
+      - name: Check go.mod is publishable
+        env:
+          DIR: ${{ steps.tag.outputs.dir }}
+          MODPATH: ${{ steps.tag.outputs.modpath }}
+        run: |
+          GOMOD="$DIR/go.mod"
+          if [ ! -f "$GOMOD" ]; then
+            echo "Error: $GOMOD does not exist"
+            exit 1
+          fi
+          DECLARED=$(go mod edit -json "$GOMOD" | jq -r '.Module.Path')
+          if [ "$DECLARED" != "$MODPATH" ]; then
+            echo "Error: $GOMOD declares module $DECLARED, expected $MODPATH"
+            exit 1
+          fi
+          # A consumer never sees a replace, so a module carrying one may
+          # build here yet not for anyone who requires it
+          REPLACES=$(go mod edit -json "$GOMOD" | jq -r '.Replace // [] | .[] | "\(.Old.Path) => \(.New.Path)"')
+          if [ -n "$REPLACES" ]; then
+            echo "Error: $GOMOD contains replace directives:"
+            echo "$REPLACES"
+            exit 1
+          fi
+
+      - name: Check if tag already exists
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Error: Tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Get previous tag for release notes
+        id: prev_tag
+        run: |
+          # Only the same module's tags: <dir>/v* for a nested module, and
+          # the unprefixed v* tags for root
+          if [ "$MODULE" = "root" ]; then
+            PREV_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+          else
+            PREV_TAG=$(git tag -l "$MODULE/v*" --sort=-v:refname | head -n 1)
+          fi
+          echo "prev_tag=${PREV_TAG}" >> $GITHUB_OUTPUT
+          echo "Previous tag: ${PREV_TAG:-none (first release)}"
+
+  # Re-run the chosen module's tests to ensure the current commit is good
+  test:
+    name: Test Before Release
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    env:
+      DIR: ${{ needs.prepare.outputs.dir }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Check module is tidy
+        working-directory: ${{ env.DIR }}
+        run: go mod tidy -diff
+
+      - name: Run unit tests
+        working-directory: ${{ env.DIR }}
+        run: go test -v -race ./...
+
+  # Only runs if tests pass
+  release:
+    name: Create Release
+    needs: [prepare, test]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
+      DIR: ${{ needs.prepare.outputs.dir }}
+      TITLE: ${{ needs.prepare.outputs.title }}
+      PREV_TAG: ${{ needs.prepare.outputs.prev_tag }}
+      DESCRIPTION: ${{ inputs.description }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
+
+      - name: Create Git tag
+        run: |
+          # Get the actual user email from GitHub API
+          USER_EMAIL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/users/${{ github.actor }} | jq -r '.email // empty')
+
+          # Fall back to noreply email if user hasn't made their email public
+          if [ -z "$USER_EMAIL" ] || [ "$USER_EMAIL" = "null" ]; then
+            USER_EMAIL="${{ github.actor }}@users.noreply.github.com"
+          fi
+
+          git config user.name "${{ github.actor }}"
+          git config user.email "$USER_EMAIL"
+          git tag -a "$TAG" -m "Release $TITLE"
+          git push origin "$TAG"
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          if [ "$MODULE" = "root" ]; then
+            # Extract project name from first H1 heading in README.md
+            PROJECT_NAME=$(grep -m 1 '^# ' README.md | sed 's/^# //')
+
+            # Fall back to repo name if not found
+            if [ -z "$PROJECT_NAME" ]; then
+              PROJECT_NAME="${{ github.event.repository.name }}"
+            fi
+            HEADING="${PROJECT_NAME} ${VERSION}"
+
+            # Root's history, less commits that touch only nested modules
+            # or Endless's task records
+            PATHS=(-- . ':(exclude)dmp' ':(exclude)sgdiff' ':(exclude).endless')
+          else
+            HEADING="$TITLE"
+            PATHS=(-- "$DIR")
+          fi
+
+          REPO_URL="https://github.com/${{ github.repository }}"
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "## ${HEADING}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+
+          # Add user-provided description if present
+          if [ -n "$DESCRIPTION" ]; then
+            echo "$DESCRIPTION" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+          fi
+
+          echo "### Commits" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          if [ -z "$PREV_TAG" ]; then
+            # First release - show all commits from beginning
+            git log --pretty=format:"- [**%h**](${REPO_URL}/commit/%H) - %s (%an, %ar)%n" "${PATHS[@]}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "See [README.md](README.md) for documentation and usage." >> $GITHUB_OUTPUT
+          else
+            # Subsequent releases - show commits since last tag
+            git log "${PREV_TAG}..HEAD" --pretty=format:"- [**%h**](${REPO_URL}/commit/%H) - %s (%an, %ar)%n" "${PATHS[@]}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "**Full Changelog**: ${REPO_URL}/compare/${PREV_TAG}...${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TITLE }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
